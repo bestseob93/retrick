@@ -97,10 +97,6 @@ export default class MainScreen extends Component {
     // this.start();
   }
 
-  toggleModal = () => {
-    this.setState({ modalVisible: !this.state.modalVisible });
-  }
-
   takePicture = () => {
     let self = this;
     this.setState({
