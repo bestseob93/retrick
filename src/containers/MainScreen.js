@@ -9,19 +9,30 @@ import {
   StyleSheet,
   View,
   Text,
+  Modal,
+  Button,
+  ScrollView,
   PanResponder,
   StatusBar,
+  Image,
   TouchableOpacity,
-  CameraRoll
+  Dimensions
 } from 'react-native';
 import { Surface } from 'gl-react-native';
 import Camera from 'react-native-camera';
 import { scaleLinear } from 'd3-scale';
+
 import Icon from 'react-native-vector-icons/Ionicons';
+import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
+import FAIcon from 'react-native-vector-icons/FontAwesome';
 
-import Saturate from './src/Saturate';
+import ImagePicker from 'react-native-image-picker';
+import VolumeSlider from 'react-native-volume-slider';
 
-export default class App extends Component {
+import Saturate from '../components/Saturate';
+const { width } = Dimensions.get('window');
+
+export default class MainScreen extends Component {
   state = {
     width: null,
     height: null,
@@ -35,7 +46,10 @@ export default class App extends Component {
       type: Camera.constants.Type.back,
       orientation: Camera.constants.Orientation.auto,
       flashMode: Camera.constants.FlashMode.auto,
+      torchMode: Camera.constants.TorchMode.off
     },
+    imageRatio: ['full', 'square', '3:4'],
+    ratioIndex: 0
   }
 
   dragScaleX = scaleLinear()
@@ -80,11 +94,117 @@ export default class App extends Component {
     // this.start();
   }
 
-  openCameraRoll = () => {
-    CameraRoll.getPhotos({
-      first: 20,
-      assetType: 'All'
+  toggleModal = () => {
+    this.setState({ modalVisible: !this.state.modalVisible });
+  }
+
+  takePicture = () => {
+    if (this.camera) {
+      this.camera.capture()
+        .then((data) => this.setState({path: data.path}))
+        .catch(err => console.error(err));
+    }
+  }
+
+  openAlbum = () => {
+    console.log('pressed');
+    const options = {
+      title: "hi",
+      cancelButtonTitle: "취소",
+      chooseFromLibraryButtonTitle: "선택하기",
+      allowsEditing: true
+    };
+
+    ImagePicker.launchImageLibrary(options, (res) => {
+      console.log(res);
+      if(!res.didCancel) {
+        this.setState({
+          path: res.uri
+        });
+      }
     });
+  }
+
+  switchFlash = () => {
+    let newFlashMode;
+    const { auto, on, off } = Camera.constants.FlashMode;
+
+    if (this.state.camera.flashMode === auto) {
+      newFlashMode = on;
+    } else if (this.state.camera.flashMode === on) {
+      newFlashMode = off;
+    } else if (this.state.camera.flashMode === off) {
+      newFlashMode = auto;
+    }
+
+    this.setState({
+      camera: {
+        ...this.state.camera,
+        flashMode: newFlashMode,
+      },
+    });
+  }
+
+  get flashIcon() {
+    let icon;
+    const { auto, on, off } = Camera.constants.FlashMode;
+
+    if (this.state.camera.flashMode === auto) {
+      icon = 'flash-auto';
+    } else if (this.state.camera.flashMode === on) {
+      icon = 'flash';
+    } else if (this.state.camera.flashMode === off) {
+      icon = 'flash-off';
+    }
+
+    return icon;
+  }
+
+  switchRatio = () => {
+    this.setState({
+      ratioIndex: this.state.ratioIndex > 1 ? this.state.ratioIndex - 2 : this.state.ratioIndex + 1
+    });
+  }
+
+  switchTorch = () => {
+    let newTorch;
+    const { on, off } = Camera.constants.TorchMode;
+
+    if(this.state.camera.torchMode === on) {
+      newTorch = off;
+    } else if(this.state.camera.torchMode === off) {
+      newTorch = on;
+    }
+
+    this.setState({
+      camera: {
+        ...this.state.camera,
+        torchMode: newTorch
+      }
+    });
+  }
+
+  switchType = () => {
+    const { back, front } = Camera.constants.Type;
+    if(this.state.camera.type === back) {
+      this.setState({
+        camera: {
+          ...this.state.camera,
+          type: front
+        }
+      });
+    } else if(this.state.camera.type === front) {
+      this.setState({
+        camera: {
+          ...this.state.camera,
+          type: back
+        }
+      });
+    }
+  }
+
+  onFocusChanged = (e) => {
+    console.log(e);
   }
 
   // refreshPic = () => {
@@ -110,6 +230,10 @@ export default class App extends Component {
   //   clearInterval(this.timer);
   // }
 
+  volumeChange = () => {
+    this.takePicture();
+  }
+
   render() {
     const filter = {
       contrast: this.state.contrast,
@@ -119,12 +243,23 @@ export default class App extends Component {
 
     if(this.state.width && this.state.height) {
       return (
-        <View style={styles.container} onLayout={this.onLayout} 
-          {...this._panResponder.panHandlers}>
+        <View style={styles.container} onLayout={this.onLayout}>
           <StatusBar
             animated
             hidden
           />
+          <View style={{flex: 1}}>
+          <VolumeSlider
+            style={{backgroundColor: 'transparent', opacity: 0}}
+            thumbSize={{
+              width: 1,
+              height: 1
+            }}
+            thumbTintColor="rgba(146,146,157, 0)"
+            minimumTrackTintColor="rgba(146,146,157, 0)"
+            maximumTrackTintColor="rgba(255,255,255, 0)"
+            showsRouteButton={true}
+            onValueChange={this.volumeChange} />
           <Camera
             style={styles.preview}
             ref={cam => this.camera = cam}
@@ -133,31 +268,55 @@ export default class App extends Component {
             captureTarget={this.state.camera.captureTarget}
             type={this.state.camera.type}
             flashMode={this.state.camera.flashMode}
-            onFocusChanged={() => {}}
+            torchMode={this.state.camera.torchMode}
+            onFocusChanged={this.onFocusChanged}
             onZoomChanged={() => {}}
             defaultTouchToFocus
             mirrorImage={false}
           >
-              <Surface style={{ width: this.state.width, height: this.state.height }}>
+              <Surface style={{ width: this.state.width, height: this.state.height }} {...this._panResponder.panHandlers}>
                 <Saturate {...filter}>
                     {{ uri: this.state.path }}
                 </Saturate>
               </Surface>
           </Camera>
+          </View>
           <View style={[styles.overlay, styles.topOverlay]}>
             <TouchableOpacity
               style={styles.flashButton}
               onPress={this.switchFlash}
             >
-              <Icon
-                name="ios-flash"
-                size={30}
+              <MaterialIcon
+                name={this.flashIcon}
+                size={25}
                 style={{
                   backgroundColor: 'transparent',
                   color: 'black'
                 }}
               />
             </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.flashButton}
+              onPress={this.switchRatio}
+            >
+              <Text style={{width: 45}}>{this.state.imageRatio[this.state.ratioIndex]}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.typeButton}
+              onPress={this.switchTorch}
+            >
+              <MaterialIcon
+                name={this.state.camera.torchMode === 0 ? "flashlight-off" : "flashlight"}
+                size={25}
+                style={{
+                  backgroundColor: 'transparent',
+                  color: 'black'
+                }}
+              />
+            </TouchableOpacity>
+            
             <TouchableOpacity
               style={styles.typeButton}
               onPress={this.switchType}
@@ -174,11 +333,11 @@ export default class App extends Component {
           </View>
           <View style={[styles.overlay, styles.bottomOverlay]}>
             <TouchableOpacity
-              style={styles.flashButton}
-              onPress={this.switchFlash}
+              style={styles.typeButton}
+              onPress={this.openAlbum}
             >
               <Icon
-                name="ios-flash"
+                name="ios-image"
                 size={30}
                 style={{
                   backgroundColor: 'transparent',
@@ -188,10 +347,10 @@ export default class App extends Component {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.typeButton}
-              onPress={this.openCameraRoll}
+              onPress={this.takePicture}
             >
-              <Icon
-                name="ios-photos"
+              <FAIcon
+                name="smile-o"
                 size={30}
                 style={{
                   backgroundColor: 'transparent',
