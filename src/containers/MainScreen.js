@@ -29,7 +29,7 @@ import FAIcon from 'react-native-vector-icons/FontAwesome';
 import ImagePicker from 'react-native-image-picker';
 
 import Saturate from '../components/Saturate';
-import Countdown from '../components/Countdown';
+import CamTimer from '../components/CamTimer';
 
 const { width } = Dimensions.get('window');
 
@@ -51,7 +51,8 @@ export default class MainScreen extends Component {
       timer: 0
     },
     imageRatio: ['full', 'square', '3:4'],
-    ratioIndex: 0
+    ratioIndex: 0,
+    countVisible: false
   }
 
   dragScaleX = scaleLinear()
@@ -102,12 +103,18 @@ export default class MainScreen extends Component {
 
   takePicture = () => {
     let self = this;
+    this.setState({
+      countVisible: true
+    });
     if (this.camera) {
       setTimeout(() => {
         self.camera.capture()
         .then((data) => {
           console.log(data);
           self.props.navigation.navigate('Captured', {data: data.path});
+          self.setState({
+            countVisible: false
+          });
         }).catch(err => console.error(err));
       }, self.state.camera.timer);
     }
@@ -303,7 +310,7 @@ export default class MainScreen extends Component {
             defaultOnFocusComponent={true}
             mirrorImage={false}
           >
-            <Countdown timer={this.state.camera.timer} />
+            { this.state.countVisible ? <CamTimer timer={this.state.camera.timer} /> : undefined }
             {/* <Surface style={{ width: this.state.width, height: this.state.height }} {...this._panResponder.panHandlers}>
               <Saturate {...filter}>
                   {{ uri: this.state.path }}
