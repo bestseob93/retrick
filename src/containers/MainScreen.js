@@ -27,9 +27,10 @@ import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import FAIcon from 'react-native-vector-icons/FontAwesome';
 
 import ImagePicker from 'react-native-image-picker';
-import VolumeSlider from 'react-native-volume-slider';
 
 import Saturate from '../components/Saturate';
+import Countdown from '../components/Countdown';
+
 const { width } = Dimensions.get('window');
 
 export default class MainScreen extends Component {
@@ -46,7 +47,8 @@ export default class MainScreen extends Component {
       type: Camera.constants.Type.back,
       orientation: Camera.constants.Orientation.auto,
       flashMode: Camera.constants.FlashMode.auto,
-      torchMode: Camera.constants.TorchMode.off
+      torchMode: Camera.constants.TorchMode.off,
+      timer: 0
     },
     imageRatio: ['full', 'square', '3:4'],
     ratioIndex: 0
@@ -99,10 +101,15 @@ export default class MainScreen extends Component {
   }
 
   takePicture = () => {
+    let self = this;
     if (this.camera) {
-      this.camera.capture()
-        .then((data) => this.setState({path: data.path}))
-        .catch(err => console.error(err));
+      setTimeout(() => {
+        self.camera.capture()
+        .then((data) => {
+          console.log(data);
+          self.props.navigation.navigate('Captured', {data: data.path});
+        }).catch(err => console.error(err));
+      }, self.state.camera.timer);
     }
   }
 
@@ -160,6 +167,39 @@ export default class MainScreen extends Component {
     return icon;
   }
 
+  switchTimer = () => {
+    let newTimer;
+
+    if (this.state.camera.timer === 0) {
+      newTimer = 3000;
+    } else if (this.state.camera.timer === 3000) {
+      newTimer = 10000;
+    } else if (this.state.camera.timer === 10000) {
+      newTimer = 0;
+    }
+
+    this.setState({
+      camera: {
+        ...this.state.camera,
+        timer: newTimer,
+      },
+    });
+  }
+
+  get timerIcon() {
+    let newTimerIcon;
+
+    if (this.state.camera.timer === 0) {
+      newTimerIcon = 'timer-off';
+    } else if (this.state.camera.timer === 3000) {
+      newTimerIcon = 'timer-3';
+    } else if (this.state.camera.timer === 10000) {
+      newTimerIcon = 'timer-10';
+    }
+
+    return newTimerIcon;
+  }
+
   switchRatio = () => {
     this.setState({
       ratioIndex: this.state.ratioIndex > 1 ? this.state.ratioIndex - 2 : this.state.ratioIndex + 1
@@ -207,6 +247,10 @@ export default class MainScreen extends Component {
     console.log(e);
   }
 
+  onZoomChanged = (e) => {
+    console.log(e);
+  }
+
   // refreshPic = () => {
   //   this.camera
   //   .capture({
@@ -230,10 +274,6 @@ export default class MainScreen extends Component {
   //   clearInterval(this.timer);
   // }
 
-  volumeChange = () => {
-    this.takePicture();
-  }
-
   render() {
     const filter = {
       contrast: this.state.contrast,
@@ -249,17 +289,6 @@ export default class MainScreen extends Component {
             hidden
           />
           <View style={{flex: 1}}>
-          <VolumeSlider
-            style={{backgroundColor: 'transparent', opacity: 0}}
-            thumbSize={{
-              width: 1,
-              height: 1
-            }}
-            thumbTintColor="rgba(146,146,157, 0)"
-            minimumTrackTintColor="rgba(146,146,157, 0)"
-            maximumTrackTintColor="rgba(255,255,255, 0)"
-            showsRouteButton={true}
-            onValueChange={this.volumeChange} />
           <Camera
             style={styles.preview}
             ref={cam => this.camera = cam}
@@ -270,15 +299,16 @@ export default class MainScreen extends Component {
             flashMode={this.state.camera.flashMode}
             torchMode={this.state.camera.torchMode}
             onFocusChanged={this.onFocusChanged}
-            onZoomChanged={() => {}}
-            defaultTouchToFocus
+            onZoomChanged={this.onZoomChanged}
+            defaultOnFocusComponent={true}
             mirrorImage={false}
           >
-              <Surface style={{ width: this.state.width, height: this.state.height }} {...this._panResponder.panHandlers}>
-                <Saturate {...filter}>
-                    {{ uri: this.state.path }}
-                </Saturate>
-              </Surface>
+            <Countdown timer={this.state.camera.timer} />
+            {/* <Surface style={{ width: this.state.width, height: this.state.height }} {...this._panResponder.panHandlers}>
+              <Saturate {...filter}>
+                  {{ uri: this.state.path }}
+              </Saturate>
+            </Surface> */}
           </Camera>
           </View>
           <View style={[styles.overlay, styles.topOverlay]}>
@@ -288,6 +318,20 @@ export default class MainScreen extends Component {
             >
               <MaterialIcon
                 name={this.flashIcon}
+                size={25}
+                style={{
+                  backgroundColor: 'transparent',
+                  color: 'black'
+                }}
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.flashButton}
+              onPress={this.switchTimer}
+            >
+              <MaterialIcon
+                name={this.timerIcon}
                 size={25}
                 style={{
                   backgroundColor: 'transparent',
@@ -397,7 +441,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: 'white',
     flexDirection: 'row',
-    justifyContent: 'center',
+    justifyContent: 'space-around',
     alignItems: 'center',
   },
   captureButton: {

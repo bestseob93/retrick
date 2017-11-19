@@ -3582,10 +3582,6 @@ react-native-vector-icons@^4.4.2:
     prop-types "^15.5.10"
     yargs "^8.0.2"
 
-react-native-volume-slider@^0.5.0:
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/react-native-volume-slider/-/react-native-volume-slider-0.5.0.tgz#60a5b2222bf77d7a7754c3bba75f3f9ad7dde4b6"
-
 react-native-webgl@^0.7.0:
   version "0.7.0"
   resolved "https://registry.yarnpkg.com/react-native-webgl/-/react-native-webgl-0.7.0.tgz#ccd9148c76b13cdc164ec131e01f9c92aa9ecf1e"

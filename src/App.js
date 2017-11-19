@@ -2,6 +2,7 @@ import { StackNavigator, TabNavigator } from 'react-navigation';
 import {
   MainScreen,
   AlbumScreen,
+  CapturedScreen
 } from './containers';
 
 const App = StackNavigator(
@@ -14,11 +15,17 @@ const App = StackNavigator(
       },
       Album: {
         screen: AlbumScreen
+      },
+      Captured: {
+        screen: CapturedScreen,
+        navigationOptions: {
+          header: null
+        },
       }
-    },
-    {
-        mode: 'modal'
     }
+    // {
+    //     mode: 'modal'
+    // }
 );
 
 export default App;
