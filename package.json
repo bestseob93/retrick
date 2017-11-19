@@ -7,8 +7,14 @@
 		"test": "jest"
 	},
 	"dependencies": {
+		"d3-scale": "^1.0.6",
+		"gl-react": "next",
+		"gl-react-native": "next",
 		"react": "16.0.0-beta.5",
-		"react-native": "0.49.0"
+		"react-native": "0.49.0",
+		"react-native-camera": "^0.12.0",
+		"react-native-vector-icons": "^4.4.2",
+		"react-native-webgl": "^0.7.0"
 	},
 	"devDependencies": {
 		"babel-jest": "21.2.0",
