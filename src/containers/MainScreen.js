@@ -9,6 +9,7 @@ import {
   StyleSheet,
   View,
   Text,
+  Animated,
   Modal,
   Button,
   ScrollView,
@@ -52,7 +53,8 @@ export default class MainScreen extends Component {
     },
     imageRatio: ['full', 'square', '3:4'],
     ratioIndex: 0,
-    countVisible: false
+    countVisible: false,
+    animatedY: -100
   }
 
   dragScaleX = scaleLinear()
@@ -95,44 +97,6 @@ export default class MainScreen extends Component {
     });
 
     // this.start();
-  }
-
-  takePicture = () => {
-    let self = this;
-    this.setState({
-      countVisible: true
-    });
-    if (this.camera) {
-      setTimeout(() => {
-        self.camera.capture()
-        .then((data) => {
-          console.log(data);
-          self.props.navigation.navigate('Captured', {data: data.path});
-          self.setState({
-            countVisible: false
-          });
-        }).catch(err => console.error(err));
-      }, self.state.camera.timer);
-    }
-  }
-
-  openAlbum = () => {
-    console.log('pressed');
-    const options = {
-      title: "hi",
-      cancelButtonTitle: "취소",
-      chooseFromLibraryButtonTitle: "선택하기",
-      allowsEditing: true
-    };
-
-    ImagePicker.launchImageLibrary(options, (res) => {
-      console.log(res);
-      if(!res.didCancel) {
-        this.setState({
-          path: res.uri
-        });
-      }
-    });
   }
 
   switchFlash = () => {
@@ -246,6 +210,53 @@ export default class MainScreen extends Component {
     }
   }
 
+  takePicture = () => {
+    let self = this;
+    this.setState({
+      countVisible: true
+    });
+    if (this.camera) {
+      setTimeout(() => {
+        self.camera.capture()
+        .then((data) => {
+          console.log(data);
+          self.props.navigation.navigate('Captured', {data: data.path});
+          self.setState({
+            countVisible: false
+          });
+        }).catch(err => console.error(err));
+      }, self.state.camera.timer);
+    }
+  }
+
+  openAlbum = () => {
+    console.log('pressed');
+    const options = {
+      title: "hi",
+      cancelButtonTitle: "취소",
+      chooseFromLibraryButtonTitle: "선택하기",
+      allowsEditing: true
+    };
+
+    ImagePicker.launchImageLibrary(options, (res) => {
+      console.log(res);
+      if(!res.didCancel) {
+        this.setState({
+          path: res.uri
+        });
+      }
+    });
+  }
+
+  switchFilter = () => {
+    // 필터 부분 FadeIn
+    this.setState({
+      animatedY: 0
+    });
+    // 기존 버튼 그룹 사이즈 축소
+    // 다른 곳 터치 시 다시 원상 복귀
+  }
+
   onFocusChanged = (e) => {
     console.log(e);
   }
@@ -307,11 +318,11 @@ export default class MainScreen extends Component {
             mirrorImage={false}
           >
             { this.state.countVisible ? <CamTimer timer={this.state.camera.timer} /> : undefined }
-            {/* <Surface style={{ width: this.state.width, height: this.state.height }} {...this._panResponder.panHandlers}>
+            <Surface style={{ width: this.state.width, height: this.state.height }} {...this._panResponder.panHandlers}>
               <Saturate {...filter}>
                   {{ uri: this.state.path }}
               </Saturate>
-            </Surface> */}
+            </Surface>
           </Camera>
           </View>
           <View style={[styles.overlay, styles.topOverlay]}>
@@ -379,32 +390,67 @@ export default class MainScreen extends Component {
             </TouchableOpacity>
           </View>
           <View style={[styles.overlay, styles.bottomOverlay]}>
-            <TouchableOpacity
-              style={styles.typeButton}
-              onPress={this.openAlbum}
-            >
-              <Icon
-                name="ios-image"
-                size={30}
-                style={{
-                  backgroundColor: 'transparent',
-                  color: 'black'
-                }}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.typeButton}
-              onPress={this.takePicture}
-            >
-              <FAIcon
-                name="smile-o"
-                size={30}
-                style={{
-                  backgroundColor: 'transparent',
-                  color: 'black'
-                }}
-              />
-            </TouchableOpacity>
+            <Animated.ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={{
+                width: width,
+                backgroundColor: 'orange',
+                position: 'absolute',
+                transform: [{
+                  translateY: this.state.animatedY
+                }]
+              }}>
+              <View style={styles.innerItem}><Text>1</Text></View>
+              <View style={styles.innerItem}><Text>2</Text></View>
+              <View style={styles.innerItem}><Text>3</Text></View>
+              <View style={styles.innerItem}><Text>4</Text></View>
+              <View style={styles.innerItem}><Text>5</Text></View>
+              <View style={styles.innerItem}><Text>6</Text></View>
+              <View style={styles.innerItem}><Text>7</Text></View>
+              <View style={styles.innerItem}><Text>8</Text></View>
+            </Animated.ScrollView>
+            <View style={styles.btnGrp}>
+              <TouchableOpacity
+                style={styles.typeButton}
+                onPress={this.openAlbum}
+              >
+                <Icon
+                  name="ios-image"
+                  size={30}
+                  style={{
+                    backgroundColor: 'transparent',
+                    color: 'black'
+                  }}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.typeButton}
+                onPress={this.takePicture}
+              >
+                <FAIcon
+                  name="smile-o"
+                  size={30}
+                  style={{
+                    backgroundColor: 'transparent',
+                    color: 'black'
+                  }}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.typeButton}
+                onPress={this.switchFilter}
+              >
+                <Icon
+                  name="ios-color-filter-outline"
+                  size={30}
+                  style={{
+                    backgroundColor: 'transparent',
+                    color: 'black'
+                  }}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       );
@@ -442,10 +488,12 @@ const styles = StyleSheet.create({
   },
   bottomOverlay: {
     bottom: 0,
+    height: 100,
     backgroundColor: 'white',
+  },
+  btnGrp: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    alignItems: 'center',
   },
   captureButton: {
     padding: 15,
@@ -461,4 +509,11 @@ const styles = StyleSheet.create({
   buttonsSpace: {
     width: 10,
   },
+  innerItem: {
+    marginRight: 10,
+    backgroundColor: '#ff8351',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 30,
+  }
 });
